@@ -7,22 +7,38 @@ from .serializers import *
 from .models import *
 from datetime import datetime,date
 
+# class RegisterUserView(APIView):
+#     def post(self, request, *args, **kwargs):
+#         serializer = UserRegistrationSerializer(data=request.data)
+#         if serializer.is_valid():
+#             referral_code = request.data.get('referral_code')
 
-#-------------------------------------------------------------------------------------
+#             # Continue with user registration
+#             user = serializer.save()
+
+#             # Check if there is a referrer
+#             try:
+#                 referrer = CustomUser.objects.get(referral_code=referral_code)
+#             except CustomUser.DoesNotExist:
+#                 # Referrer not found
+#                 referrer = None
+
+#             if referrer:
+#                 # Update wallet balance for the referrer only
+#                 referral_bonus = 40  
+#                 referrer.wallet_balance += referral_bonus
+#                 referrer.save()
+
+#                 return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+
+#             return Response({'error': 'Invalid referral code'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+#------------------------------------------------------------------------------------
 
-
-
-
-# views.py# views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import CustomUser
-from .serializers import UserRegistrationSerializer
-
-class UserRegistrationView(APIView):
+class RegisterUserView(APIView):
     def is_duplicate_value(self, field_name, value):
         return CustomUser.objects.filter(**{field_name: value}).exists()
 
@@ -31,8 +47,9 @@ class UserRegistrationView(APIView):
         password1 = request.data.get('confirmPassword')
         username = request.data.get('username')
         email = request.data.get('email')
-        referral_code = request.data.get('referral_code')  # Add this line to get referral code
-        
+        referral_code = request.data.get('referral_code')
+
+        # Check for duplicate username and email
         if self.is_duplicate_value('username', username):
             return Response({"msg": "Username already exists"}, status=status.HTTP_400_BAD_REQUEST)
         elif self.is_duplicate_value('email', email):
@@ -41,44 +58,26 @@ class UserRegistrationView(APIView):
         if serializer.is_valid():
             password = serializer.validated_data['password']
             if password == password1:
-                # Check if a user with the given referral code already exists
-                existing_user = CustomUser.objects.filter(referral_code=referral_code).first()
-                if existing_user:
-                    # Check if the referral code has already been redeemed
-                    if existing_user.is_referral_code_redeemed:
-                        return Response({'error': 'Referral code has already been redeemed.'}, status=status.HTTP_400_BAD_REQUEST)
+                serializer.save()
 
-                    # Mark the referral code as redeemed
-                    existing_user.is_referral_code_redeemed = True
-                    existing_user.save()
+                # Check if there is a referrer
+                try:
+                    referrer = CustomUser.objects.get(referral_code=referral_code)
+                except CustomUser.DoesNotExist:
+                    # Referrer not found
+                    referrer = None
 
-                    # Continue with user registration
-                    user = serializer.save()
+                if referrer:
+                    # Update wallet balance for the referrer only
+                    referral_bonus = 40  # Change to the desired bonus amount
+                    referrer.wallet_balance += referral_bonus
+                    referrer.save()
 
-                    # Check if there is a referrer and update wallet balances
-                    if user.referrer:
-                        referral_bonus = 50
-                        user.referrer.wallet_balance += referral_bonus
-                        user.wallet_balance += referral_bonus
-                        user.referrer.save()
-                        user.save()
+                return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
 
-                        # Add an additional deposit of 50 Rs to the new user's wallet
-                        user.wallet_balance += 50
-                        user.save()
+            return Response({"message": "Password fields do not match"}, status=status.HTTP_400_BAD_REQUEST)
 
-                    return Response({'message': 'User registered successfully. Earned 50 Rs in wallet.'}, status=status.HTTP_201_CREATED)
-
-                return Response({'error': 'User with this referral code does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response({"message": "Password fields do not match"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-#------------------------------------------------------------------------------------
-
-
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # class UserRegistrationView(APIView):
@@ -104,6 +103,10 @@ class UserRegistrationView(APIView):
 #             return Response({"message":"password fields do not match"}, status=status.HTTP_201_CREATED)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+
+
 class UserDetailView(APIView):
     def get(self, request, user_id):
         try:
@@ -112,6 +115,8 @@ class UserDetailView(APIView):
             return Response(serializer.data)
         except CustomUser.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        
 #----------edit profile 
 class EditProfileView(APIView):
     def patch(self,request,pk):

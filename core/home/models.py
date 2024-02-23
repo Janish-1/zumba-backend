@@ -29,7 +29,7 @@ class CustomUser(AbstractUser):
     referral_code = models.CharField(max_length=20, blank=True, null=True)
     referrer = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    is_referral_code_redeemed = models.BooleanField(default=False)
+  
     
     def __str__(self):
         return self.username

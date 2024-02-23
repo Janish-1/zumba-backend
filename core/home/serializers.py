@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import *
 from .utility import generate_unique_referral_code
-# CustomUser = get_user_model()
+CustomUser = get_user_model()
 
 # class UserRegistrationSerializer(serializers.ModelSerializer):
 #     password = serializers.CharField(write_only=True)
@@ -24,19 +24,17 @@ from .utility import generate_unique_referral_code
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-
     class Meta:
-        model = get_user_model()
-        fields = '__all__'  
-
+        model = CustomUser
+        fields = '__all__'
+        
+        
     def create(self, validated_data):
         password = validated_data.pop('password', None)
         user = get_user_model()(**validated_data)
         
         if password:
             user.set_password(password)
-
         user.save()
 
         # Generate a unique referral code for the user
