@@ -189,7 +189,6 @@ class otpverify(APIView):
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('id')
         otp_entered = request.data.get('otp')
-        print(user_id, otp_entered)
 
         # Validate user_id and otp are provided
         if not user_id or not otp_entered:
