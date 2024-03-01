@@ -167,12 +167,13 @@ class UserLoginAPIView(APIView):
             send_mail(
                 'OTP Verification',
                 f'Your OTP for login is: {otp}',
-                'FOR LOGIN',  # Replace with your email
-                [user.email],
+                'deepaksaral100@gmail.com',  # Replace with your email
+                # [user.email],
+                recipient_list = [email],
                 fail_silently=False,
             )
 
-            return Response({'message':'verification code send to your email', 'user_id':user.id},status=status.HTTP_200_OK)
+            return Response({'message':'verification code send to your email', 'user_id':user.id,'otp':otp},status=status.HTTP_200_OK)
         else:
             return JsonResponse({'error': 'Invalid credentials'}, status=401)
 
@@ -189,6 +190,7 @@ class otpverify(APIView):
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('id')
         otp_entered = request.data.get('otp')
+        print(user_id, otp_entered)
 
         # Validate user_id and otp are provided
         if not user_id or not otp_entered:
