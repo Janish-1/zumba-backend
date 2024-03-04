@@ -28,8 +28,8 @@ class CustomUser(AbstractUser):
     otp = models.CharField(max_length=6, null=True, blank=True) 
     referral_code = models.CharField(max_length=20, blank=True, null=True)
     referrer = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
-    wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-  
+    wallet_balance = models.PositiveIntegerField(default=0)
+ 
     
     def __str__(self):
         return self.username
@@ -132,3 +132,59 @@ class luckyparticipate(models.Model):
     
     def __str__(self):
         return f"{self.luckydraw_name.name} - {self.user.username}"
+    
+    
+    
+    
+#----------------------------------------------------payment
+
+
+
+
+# class Payment(models.Model):
+#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+#     amount = models.PositiveIntegerField()
+#     timestamp = models.DateTimeField(auto_now_add=True)
+#     transaction_id = models.CharField(max_length=100,unique=True)
+#     def __str__(self):
+#         return f"{self.user.username}'s Payment - {self.id}"
+
+
+
+from datetime import datetime, timedelta
+class Payment(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    transaction_id = models.CharField(max_length=100, unique=True)
+    status = models.CharField(max_length=20, default='Initiated')  # Status can be 'Initiated', 'Success', 'Failed'
+    razorpay_order_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    razorpay_payment_id = models.CharField(max_length=100, null=True, blank=True)
+    razorpay_signature = models.CharField(max_length=100, null=True, blank=True)
+    order_id = models.CharField(max_length=100, null=True, blank=True) 
+    subscription_plan = models.CharField(max_length=10, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Payment - {self.id}"
+ 
+ 
+    # def update_subscription_plan(self):
+    #     if self.status == 'success':
+    #         self.subscription_plan = 'active'
+    #     elif self.timestamp + timedelta(days=30) < datetime.now():
+    #         self.subscription_plan = 'expire'
+    #     self.save()
+    
+    
+    
+    
+    
+    def update_subscription_plan(self):
+        if self is not None:
+            if self.status == 'success':
+                self.subscription_plan = 'active'
+            elif self.timestamp + timedelta(days=30) < datetime.now():
+                self.subscription_plan = 'expire'
+            self.save()
+        else:
+            print("No payment found for the user.")

@@ -24,8 +24,14 @@ urlpatterns = [
     path('luckydrawbtn/', luckydrawbtn.as_view(), name='calculate_calories'),
     # path('phonepe-payment/', PhonePePaymentView.as_view(), name='phonepe-payment'),
     path('users/<int:user_id>/', UserDetailView.as_view(), name='user-detail'),
-    
-    
+   
+    # path('subscribe/', SubscriptionPaymentView.as_view(), name='subscription_payment'),
+    path('subscribe/', SubscriptionPaymentView.as_view(), name='subscription-payment'),
+    path('paymentview/', paymentview.as_view(), name='paymentview'),
+    # path('razorpay-callback/', RazorpayCallbackView.as_view(), name='razorpay-callback'),
+    path('transactions/<int:user_id>/', TransactionPerPersonView.as_view(), name='transaction-detail'),
+   
+   
 ]
-    # other URL patterns...
+    
 

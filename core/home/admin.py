@@ -9,8 +9,5 @@ admin.site.register(Category)
 admin.site.register(UserAttendance)
 admin.site.register(tracker)
 admin.site.register(luckyparticipate)
-# class BlogAdmin(admin.ModelAdmin):
-#     list_display = ('id', 'title', 'author', 'description', 'category', 'date_added')
-# admin.site.register(Blog, BlogAdmin)
-
+admin.site.register(Payment)
 admin.site.register(Blog)

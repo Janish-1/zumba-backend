@@ -127,6 +127,7 @@ class liveSessionparticipatebtn(serializers.ModelSerializer):
     class Meta:
         model = luckyparticipate
         fields = ['user','luckydraw_name']
+   
         
 
 class ReferralCodeSerializer(serializers.Serializer):
@@ -138,4 +139,12 @@ class ReferralCodeSerializer(serializers.Serializer):
 class PlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plan
+        fields = '__all__'
+        
+        
+        
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
         fields = '__all__'

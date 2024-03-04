@@ -11,8 +11,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-import os
 
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'home',
     'rest_framework',
     'corsheaders',
+  
 ]
 
 AUTH_USER_MODEL = 'home.CustomUser'
@@ -134,21 +135,24 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # settings.py
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-ACCOUNT_EMAIL_VERIFICATION = "none"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'deepaksaral100@gmail.com'
 EMAIL_HOST_PASSWORD = 'qeuieecmcxpzfwdl'
 
-
 CORS_ALLOW_ALL_ORIGINS=True
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'media')
 
-# settings.py
-PHONEPE_MERCHANT_ID = 'PGTESTPAYUAT'
-PHONEPE_API_KEY = '099eb0cd-02cf-4e2a-8aca-3e6c6aff0399'
-PHONEPE_CALLBACK_URL = 'https://api-preprod.phonepe.com/apis/hermes'  # Update with your actual callback URL
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), '/media')
+
+
+RAZORPAY_API_KEY = 'rzp_test_QDtDJzsjSHThRn'
+RAZORPAY_API_SECRET = 'I7gzl4tOuyfTFpJhhaSGXo7P'
+
+# PHONEPE_MERCHANT_ID = 'PGTESTPAYUAT'
+# PHONEPE_SALT_KEY = '099eb0cd-02cf-4e2a-8aca-3e6c6aff0399'
+

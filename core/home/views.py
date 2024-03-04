@@ -59,19 +59,17 @@ class RegisterUserView(APIView):
             password = serializer.validated_data['password']
             if password == password1:
                 serializer.save()
-
-                # Check if there is a referrer
                 try:
                     referrer = CustomUser.objects.get(referral_code=referral_code)
                 except CustomUser.DoesNotExist:
-                    # Referrer not found
                     referrer = None
-
                 if referrer:
+                    print(referrer.wallet_balance)
                     # Update wallet balance for the referrer only
-                    referral_bonus = 40  # Change to the desired bonus amount
+                    referral_bonus = 50  # Change to the desired bonus amount
                     referrer.wallet_balance += referral_bonus
                     referrer.save()
+                    print(referrer.wallet_balance)
 
                 return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
 
@@ -117,15 +115,29 @@ class UserDetailView(APIView):
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         
         
-#----------edit profile 
+# #----------edit profile 
+# class EditProfileView(APIView):
+#     def patch(self,request,pk):
+#         user=CustomUser.objects.get(pk=pk)
+#         serializers = UserRegistrationSerializer(user,data=request.data,partial=True)
+#         if serializers.is_valid():
+#             serializers.save()
+#             return Response(serializers.data)
+#         return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class EditProfileView(APIView):
-    def patch(self,request,pk):
-        user=CustomUser.objects.get(pk=pk)
-        serializers = UserRegistrationSerializer(user,data=request.data,partial=True)
-        if serializers.is_valid():
-            serializers.save()
-            return Response(serializers.data)
-        return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
+    def patch(self, request, pk):
+        user = CustomUser.objects.get(pk=pk)
+        serializer = UserRegistrationSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            # Check if the error is related to the 'dob' field
+            if 'dob' in serializer.errors:
+                error_msg = {"dob": "Invalid date of birth format. Please use YYYY-MM-DD."}
+                return Response(error_msg, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 #--------logins
@@ -167,13 +179,17 @@ class UserLoginAPIView(APIView):
             send_mail(
                 'OTP Verification',
                 f'Your OTP for login is: {otp}',
-                'deepaksaral100@gmail.com',  # Replace with your email
-                # [user.email],
-                recipient_list = [email],
+                'FOR LOGIN',  # Replace with your email
+                [user.email],
                 fail_silently=False,
             )
+    
+            # tab=Payment.objects.filter(user=user.id).last()
+            # return Response({'message':'verification code send to your email', 'user_id':user.id,'status':tab.subscription_plan},status=status.HTTP_200_OK)
+            tab = Payment.objects.filter(user=user.id).last()
 
-            return Response({'message':'verification code send to your email', 'user_id':user.id,'otp':otp},status=status.HTTP_200_OK)
+            status_value = tab.subscription_plan if tab and hasattr(tab, 'subscription_plan') else 'inactive'
+            return Response({'message': 'verification code sent to your email', 'user_id': user.id, 'status': status_value}, status=status.HTTP_200_OK)
         else:
             return JsonResponse({'error': 'Invalid credentials'}, status=401)
 
@@ -190,7 +206,7 @@ class otpverify(APIView):
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('id')
         otp_entered = request.data.get('otp')
-        print(user_id, otp_entered)
+        
 
         # Validate user_id and otp are provided
         if not user_id or not otp_entered:
@@ -488,22 +504,232 @@ class livesessionattendence(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# class luckydrawbtn(APIView):
+#     def post(self, request):
+#         user_id = request.data.get('user')
+#         lucky_id = request.data.get('luckydraw')
+#         print(user_id,lucky_id)
+#         try:
+#             user = CustomUser.objects.get(id=user_id)
+#             tab = UserAttendance.objects.get(user=user)
+#         except:
+#             return Response({"msg":"this user does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+#         try:
+#             lucky = LuckyDraw.objects.get(id=lucky_id) 
+#         except:
+#             return Response({"msg":"this lucky draw does not exist"}, status=status.HTTP_400_BAD_REQUEST) 
+#         try:
+#             check = luckyparticipate.objects.filter(user=user,luckydraw_name=lucky)
+#         except:
+#             pass
+#             # check = None
+#         print(check)
+#         if not check: 
+#             print("fhjdfsdfadsfadsf") 
+#             print(check)
+#             if tab.counter >= 30:
+#                 print("ookk")
+#                 main = luckyparticipate.objects.create(user=user,luckydraw_name=lucky)
+#                 main.save()
+#                 return Response({"msg":"Participation Success"}, status=status.HTTP_200_OK)
+#         else: 
+#             return Response({"msg":"You already participated for this lucky draw"}, status=status.HTTP_400_BAD_REQUEST)
+#         return Response({"msg":"You Are Not Eligible For Lucky Draw your live session attendence is less than 30 days"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class luckydrawbtn(APIView):
     def post(self, request):
-        serializer = liveSessionparticipatebtn(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            main = UserAttendance.objects.get(user=user)
-            print(main.counter)
-            if main.counter >= 30:
-                print("ookk")
-                serializer.save()
-            return Response({"msg":"Participation Success"}, status=status.HTTP_200_OK)
-        return Response({"msg":"You Are Not Eligible For Lucky Draw your live session attendence is less than 30 days"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-    
-#-------------------------------------------------------------------------
+        user_id = request.data.get('user')
+        lucky_id = request.data.get('luckydraw')
+        print(user_id, lucky_id)
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({"msg": "This user does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            tab = UserAttendance.objects.get(user=user)
+        except UserAttendance.DoesNotExist:
+            return Response({"msg": "You need to attend live session to participate in this lucky draw."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            lucky = LuckyDraw.objects.get(id=lucky_id)
+        except LuckyDraw.DoesNotExist:
+            return Response({"msg": "This lucky draw does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+        existing_participations = luckyparticipate.objects.filter(user=user, luckydraw_name=lucky)
 
+        if existing_participations.exists():
+            return Response({"msg": "You already participated in this lucky draw"}, status=status.HTTP_400_BAD_REQUEST)
+        if tab.counter >= 30:
+            new_participation = luckyparticipate.objects.create(user=user, luckydraw_name=lucky)
+            new_participation.save()
+            return Response({"msg": "Participation Success"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"msg": "You Are Not Eligible For Lucky Draw, your live session attendance is less than 30 days"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    
+#-------------------------------------------------------------------------payment gateway methods
+
+
+from decimal import Decimal
+import uuid
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.conf import settings
+from .models import Payment
+from datetime import datetime
+from rest_framework import status
+from rest_framework.views import APIView
+from home.models import CustomUser 
+import razorpay
+
+class SubscriptionPaymentView(APIView):
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')  
+        user = self.get_user_by_id(user_id)
+        if not user:
+            return JsonResponse({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        subscription_amount_paisa = 10000 
+        subscription_amount_inr = Decimal(subscription_amount_paisa) / 100  
+        if user.wallet_balance > 0:
+            redeemed_amount = min(user.wallet_balance, subscription_amount_inr)
+            if redeemed_amount > 50:
+                redeemed_amount = 50
+
+            remaining_amount_for_payment = subscription_amount_inr - redeemed_amount
+
+            user.wallet_balance -= redeemed_amount
+            user.save()
+        else:
+            remaining_amount_for_payment = subscription_amount_inr
+            redeemed_amount = 0
+        unique_transaction_id = str(uuid.uuid4())[:-2]
+
+        try:
+            client = razorpay.Client(auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET))
+            order_params = {
+                'amount': int(remaining_amount_for_payment * 100),
+                'currency': 'INR',
+                'payment_capture': 1,
+                'notes': {
+                    'transaction_id': unique_transaction_id,
+                }
+            }
+            order = client.order.create(data=order_params)
+            order_id = order['id']
+            payment = Payment.objects.create(
+            user=user,
+            amount=remaining_amount_for_payment,
+            status='Initiated',
+            timestamp=datetime.now(),
+            transaction_id=unique_transaction_id,
+            razorpay_order_id=order_id,
+            order_id=order_id  
+            )
+            return JsonResponse({'order_id': order_id,'amount': remaining_amount_for_payment}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'error': f'Failed to initiate payment. {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def get_user_by_id(self, user_id):
+        try:
+            return CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return None
+
+
+   
+# class paymentview(APIView):
+#     def post(self, request):
+#         try:
+#             razorpay_payment_id = request.data.get('razorpay_payment_id')
+#             razorpay_signature = request.data.get('razorpay_signature')
+#             razorpay_order_id = request.data.get('razorpay_order_id')
+#             payment = Payment.objects.get(
+#                 razorpay_order_id=razorpay_order_id
+#             )
+#             payment.status = 'success'
+#             payment.razorpay_payment_id = razorpay_payment_id
+#             payment.razorpay_signature = razorpay_signature
+#             payment.save()
+            
+#             return JsonResponse({
+#                 'message': 'Payment successful',
+#                 'order_id': razorpay_order_id,
+#                 'payment_id': payment.id, 
+#                 'razorpay_payment_id': razorpay_payment_id,
+#                 'razorpay_signature': razorpay_signature
+#             })
+#         except Payment.DoesNotExist:
+#             return JsonResponse({'error': 'Payment not found'}, status=404)
+#         except Payment.MultipleObjectsReturned:
+#             return JsonResponse({'error': 'Multiple payments found for the same razorpay_order_id'}, status=400)
+
+
+
+
+
+# views.py
+
+from decimal import Decimal
+import uuid
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.conf import settings
+from .models import Payment
+from datetime import datetime
+from rest_framework import status
+from rest_framework.views import APIView
+from home.models import CustomUser 
+import razorpay
+
+class paymentview(APIView):
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            razorpay_payment_id = request.data.get('razorpay_payment_id')
+            razorpay_signature = request.data.get('razorpay_signature')
+            razorpay_order_id = request.data.get('razorpay_order_id')
+            
+            payment = Payment.objects.get(razorpay_order_id=razorpay_order_id)
+            
+            user = payment.user
+            
+            payment.status = 'success'
+            payment.razorpay_payment_id = razorpay_payment_id
+            payment.razorpay_signature = razorpay_signature
+            payment.save()
+            
+            # Call the update_subscription_plan method
+            payment.update_subscription_plan()
+            
+            return JsonResponse({
+                'message': 'Payment successful',
+                'order_id': razorpay_order_id,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_signature': razorpay_signature,
+                'subscription_plan': payment.subscription_plan,  
+            })
+        except Payment.DoesNotExist:
+            return JsonResponse({'error': 'Payment not found'}, status=404)
+        except Payment.MultipleObjectsReturned:
+            return JsonResponse({'error': 'Multiple payments found for the same razorpay_order_id'}, status=400)
+
+
+
+
+class TransactionPerPersonView(APIView):
+    def get(self, request, user_id):
+        try:
+            transactions = Payment.objects.filter(user__id=user_id)
+            serializer = PaymentSerializer(transactions, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+   
