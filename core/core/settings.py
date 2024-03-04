@@ -142,9 +142,10 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'deepaksaral100@gmail.com'
 EMAIL_HOST_PASSWORD = 'qeuieecmcxpzfwdl'
 
-CORS_ALLOW_ALL_ORIGINS=True
-
-
+CORS_ALLOWED_ORIGINS = [
+    "https://zumba-backend.onrender.com/",
+    "http://zumba-backend.onrender.com/",
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), '/media')
