@@ -143,10 +143,10 @@ EMAIL_HOST_USER = 'deepaksaral100@gmail.com'
 EMAIL_HOST_PASSWORD = 'qeuieecmcxpzfwdl'
 
 CORS_ALLOWED_ORIGINS = [
-    "https://zumba-backend.onrender.com/",
-    "http://zumba-backend.onrender.com/",
-    "http://zumba.pujanpaath.com/",
-    "https://zumba.pujanpaath.com/",
+    "https://zumba-backend.onrender.com",
+    "http://zumba-backend.onrender.com",
+    "http://zumba.pujanpaath.com",
+    "https://zumba.pujanpaath.com",
 ]
 
 MEDIA_URL = '/media/'
