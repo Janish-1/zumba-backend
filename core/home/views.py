@@ -7,6 +7,14 @@ from .serializers import *
 from .models import *
 from datetime import datetime,date
 
+# Importing the SMTP Libraries
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from django.core.mail import EmailMessage
+
+
 # class RegisterUserView(APIView):
 #     def post(self, request, *args, **kwargs):
 #         serializer = UserRegistrationSerializer(data=request.data)
@@ -175,14 +183,31 @@ class UserLoginAPIView(APIView):
             user.otp = otp
             user.save()
 
-            # Send OTP to user's email
-            send_mail(
-                'OTP Verification',
-                f'Your OTP for login is: {otp}',
-                'FOR LOGIN',  # Replace with your email
-                [user.email],
-                fail_silently=False,
-            )
+            # # Send OTP to user's email
+            # send_mail(
+            #     'OTP Verification',
+            #     f'Your OTP for login is: {otp}',
+            #     'FOR LOGIN',  # Replace with your email
+            #     [user.email],
+            #     fail_silently=False,
+            # )
+            
+            # Email sending logic
+            subject = "YOUR OTP"
+            message = f"Your OTP is: {otp}\nUse this OTP to Login."
+        
+            sender = 'noreply@ramo.co.in'
+            recipient = email
+            
+            try:
+                # Using Django's EmailMessage
+                email = EmailMessage(subject, message, sender, [recipient])
+                email.send()
+        
+            except Exception as e:
+                # Handle email sending failure
+                return Response({'success': False, 'message': 'Error sending email', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     
             # tab=Payment.objects.filter(user=user.id).last()
             # return Response({'message':'verification code send to your email', 'user_id':user.id,'status':tab.subscription_plan},status=status.HTTP_200_OK)

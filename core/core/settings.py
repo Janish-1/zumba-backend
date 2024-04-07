@@ -136,17 +136,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # settings.py
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'ramo.co.in'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'deepaksaral100@gmail.com'
-EMAIL_HOST_PASSWORD = 'qeuieecmcxpzfwdl'
+EMAIL_HOST_USER = 'noreply@ramo.co.in'  # Replace with your cPanel email address
+EMAIL_HOST_PASSWORD = '.OwE6EY5E82c'  # Replace with your cPanel email password
 
 CORS_ORIGIN_ALLOW_ALL = True
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), '/media')
-
+MEDIA_ROOT = BASE_DIR / 'media'
 
 RAZORPAY_API_KEY = 'rzp_test_QDtDJzsjSHThRn'
 RAZORPAY_API_SECRET = 'I7gzl4tOuyfTFpJhhaSGXo7P'
