@@ -187,6 +187,10 @@ class UserLoginAPIView(APIView):
         user.otp = otp
         user.save()
 
+        tab = Payment.objects.filter(user=user.id).last()
+
+        status_value = tab.subscription_plan if tab and hasattr(tab, 'subscription_plan') else 'inactive'
+
         # Send OTP using Twilio
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         message = client.messages.create(
@@ -195,7 +199,7 @@ class UserLoginAPIView(APIView):
             to=phone_number
         )
 
-        return Response({'message': 'OTP sent to your phone number'}, status=200)
+        return Response({'message': 'OTP sent to your phone number','user_id': user.id , 'status': status_value}, status=200)
 
 #--------otp verified
 
