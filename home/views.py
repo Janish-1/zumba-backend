@@ -13,6 +13,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from django.core.mail import EmailMessage
+from django.utils.crypto import get_random_string
+from django.contrib.auth.hashers import make_password
 
 
 # class RegisterUserView(APIView):
@@ -51,40 +53,48 @@ class RegisterUserView(APIView):
         return CustomUser.objects.filter(**{field_name: value}).exists()
 
     def post(self, request, *args, **kwargs):
-        serializer = UserRegistrationSerializer(data=request.data)
-        password1 = request.data.get('confirmPassword')
-        username = request.data.get('username')
+        # Extract data from the request
+        name = request.data.get('name')
+        father_name = request.data.get('fatherName')
+        address = request.data.get('address')
+        aadhar_no = request.data.get('aadharNo')
+        photo = request.data.get('photo')
+        phone_number = request.data.get('phoneNumber')
         email = request.data.get('email')
-        referral_code = request.data.get('referral_code')
 
-        # Check for duplicate username and email
-        if self.is_duplicate_value('username', username):
-            return Response({"msg": "Username already exists"}, status=status.HTTP_400_BAD_REQUEST)
-        elif self.is_duplicate_value('email', email):
-            return Response({"msg": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        # Validate uniqueness of username and email
+        if self.is_duplicate_value('username', email):
+            return Response({"msg": "Username (email) already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Generate a random password
+        random_password = get_random_string(length=12)  # Adjust length and character set as needed
+        hashed_password = make_password(random_password)
+
+        # Prepare data for user registration
+        user_data = {
+            'username': name,
+            'fatherName': father_name,
+            'address': address,
+            'aadharNo': aadhar_no,
+            'photo': photo,
+            'mobile_no': phone_number,
+            'email': email,
+            'password': hashed_password,
+        }
+
+        # Serialize user data
+        serializer = UserRegistrationSerializer(data=user_data)
+        
+        # Validate serializer data
         if serializer.is_valid():
-            password = serializer.validated_data['password']
-            if password == password1:
-                serializer.save()
-                try:
-                    referrer = CustomUser.objects.get(referral_code=referral_code)
-                except CustomUser.DoesNotExist:
-                    referrer = None
-                if referrer:
-                    print(referrer.wallet_balance)
-                    # Update wallet balance for the referrer only
-                    referral_bonus = 50  # Change to the desired bonus amount
-                    referrer.wallet_balance += referral_bonus
-                    referrer.save()
-                    print(referrer.wallet_balance)
+            # Save user data
+            serializer.save()
+            # Additional logic for referral code, wallet balance, etc.
+            # ...
 
-                return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
-
-            return Response({"message": "Password fields do not match"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+            return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # class UserRegistrationView(APIView):
 #     def is_duplicate_value(self,field_name,value):
@@ -158,66 +168,34 @@ from rest_framework import status
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from .models import CustomUser
+from twilio.rest import Client
 
 class UserLoginAPIView(APIView):
     def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
-        password = request.data.get('password')
+        phone_number = request.data.get('phoneNumber')
+        if phone_number is None:
+            return Response({'error': 'Phone number is required'}, status=400)
 
-        # Validate email and password
-        if email is None or password is None:
-            return JsonResponse({'error': 'Both email and password are required'}, status=400)
-
-        # Retrieve user by email
+        # Retrieve user by phone number
         try:
-            user = CustomUser.objects.get(email=email)
+            user = CustomUser.objects.get(mobile_no=phone_number)
         except CustomUser.DoesNotExist:
-            return JsonResponse({'error': 'User does not exist'}, status=404)
+            return Response({'error': 'User does not exist'}, status=404)
 
-        # Authenticate user using the default authentication backend
-        authenticated_user = authenticate(request, username=user.username, password=password)
+        # Generate OTP and save it to the user model
+        otp = get_random_string(length=6, allowed_chars='0123456789')
+        user.otp = otp
+        user.save()
 
-        if authenticated_user is not None:
-            # Generate and send OTP
-            otp = get_random_string(length=6, allowed_chars='0123456789')
-            user.otp = otp
-            user.save()
+        # Send OTP using Twilio
+        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        message = client.messages.create(
+            body=f'Your OTP for login is: {otp}',
+            from_=settings.TWILIO_PHONE_NUMBER,
+            to=phone_number
+        )
 
-            # # Send OTP to user's email
-            # send_mail(
-            #     'OTP Verification',
-            #     f'Your OTP for login is: {otp}',
-            #     'FOR LOGIN',  # Replace with your email
-            #     [user.email],
-            #     fail_silently=False,
-            # )
-            
-            # Email sending logic
-            subject = "YOUR OTP"
-            message = f"Your OTP is: {otp}\nUse this OTP to Login."
-        
-            sender = 'noreply@ramo.co.in'
-            recipient = email
-            
-            try:
-                # Using Django's EmailMessage
-                email = EmailMessage(subject, message, sender, [recipient])
-                email.send()
-        
-            except Exception as e:
-                # Handle email sending failure
-                return Response({'success': False, 'message': 'Error sending email', 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    
-            # tab=Payment.objects.filter(user=user.id).last()
-            # return Response({'message':'verification code send to your email', 'user_id':user.id,'status':tab.subscription_plan},status=status.HTTP_200_OK)
-            tab = Payment.objects.filter(user=user.id).last()
-
-            status_value = tab.subscription_plan if tab and hasattr(tab, 'subscription_plan') else 'inactive'
-            return Response({'message': 'verification code sent to your email', 'user_id': user.id, 'status': status_value}, status=status.HTTP_200_OK)
-        else:
-            return JsonResponse({'error': 'Invalid credentials'}, status=401)
-
+        return Response({'message': 'OTP sent to your phone number'}, status=200)
 
 #--------otp verified
 
@@ -229,17 +207,17 @@ from django.shortcuts import get_object_or_404
 
 class otpverify(APIView):
     def post(self, request, *args, **kwargs):
-        user_id = request.data.get('id')
+        phoneNumber = request.data.get('phoneNumber')
         otp_entered = request.data.get('otp')
         
 
         # Validate user_id and otp are provided
-        if not user_id or not otp_entered:
-            return Response({'error': 'User ID and OTP are required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not phoneNumber or not otp_entered:
+            return Response({'error': 'Phone Number and OTP are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Get the user by user_id
-            user = CustomUser.objects.get(id=user_id)
+            user = CustomUser.objects.get(mobile_no=phoneNumber)
 
             # Validate if the user has an OTP set
             if not user.otp:

@@ -25,27 +25,17 @@ CustomUser = get_user_model()
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CustomUser
+        model = CustomUser  # Using Django's dynamic user model reference
         fields = '__all__'
         
         
     def create(self, validated_data):
-        password = validated_data.pop('password', None)
-        user = get_user_model()(**validated_data)
-        
-        if password:
-            user.set_password(password)
-        user.save()
-
-        # Generate a unique referral code for the user
-        referral_code = generate_unique_referral_code(user.id)
-
-        # Assign the referral code to the user
-        user.referral_code = referral_code
+        """
+        Create and return a new user, without setting a password.
+        """
+        user = CustomUser(**validated_data)
         user.save()
         return user
-
-
 
 #----------------manage live session 
 

@@ -26,10 +26,11 @@ class CustomUser(AbstractUser):
     user_plan = models.ForeignKey(Plan, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, null=True, blank=True)
     otp = models.CharField(max_length=6, null=True, blank=True) 
-    referral_code = models.CharField(max_length=20, blank=True, null=True)
-    referrer = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     wallet_balance = models.PositiveIntegerField(default=0)
- 
+    aadharNo = models.CharField(max_length=12, null=True, blank=True)
+    photo = models.FileField(upload_to='user')
+    name = models.CharField(max_length=100,null=True,blank=True)
+    fathername = models.CharField(max_length=100,null=True,blank=True)
     
     def __str__(self):
         return self.username
